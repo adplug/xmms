@@ -20,6 +20,14 @@ ACX_PTHREAD(,AC_MSG_ERROR([*** POSIX threads not installed ***]))
 AC_CHECK_LIB(adplug,main,,AC_MSG_ERROR([*** AdPlug >= 1.1 not installed ***]))
 AM_PATH_XMMS(0.9.5.1,,AC_MSG_ERROR([*** XMMS >= 0.9.5.1 not installed ***]))
 
+if test x${xmms_input_plugin_dir} == x; then
+   xmms_input_plugin_dir=${XMMS_INPUT_PLUGIN_DIR}
+else
+   echo "Installing to user-specified directory: ${xmms_input_plugin_dir}"
+fi
+
+AC_SUBST(xmms_input_plugin_dir)
+
 # Enable debug logging on user request
 AC_ARG_ENABLE([debug],AC_HELP_STRING([--enable-debug],
 [Compile with debug logging support (default is to disable debug logging)]),

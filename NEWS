@@ -1,3 +1,8 @@
 This is a brief overview of user-visible changes in AdPlug/XMMS.
 
-I'm sorry, but there are no news yet!
+Changes for version 1.1:
+- Made the installation target directory configurable through the
+  'xmms_input_plugin_dir' variable.
+- Implemented "Formats" config-dialog tab.
+- Implemented "Quick detect" feature.
+- Added tooltips.

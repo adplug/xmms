@@ -1,5 +1,5 @@
-AdPlug/XMMS - AdPlug XMMS Plugin 1.0
-Copyright (C) 2002 Simon Peter <dn.tlp@gmx.net>
+AdPlug/XMMS - AdPlug XMMS Plugin
+Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>
 
 Website: http://adplug.sourceforge.net/
 
@@ -29,6 +29,19 @@ pthreads should have come with your system.
 XMMS can be obtained from http://www.xmms.org/.
 
 GLib and GTK+ can be obtained from http://www.gtk.org/.
+
+Installation
+------------
+Refer to the file 'INSTALL' for installation instructions.
+
+If you like to set a custom installation directory for the plugin to be
+installed to, like for example '$HOME/.xmms/Plugins/Input', you can specify
+the variable 'xmms_input_plugin_dir' (all lowercase) to the 'configure'
+script, like this:
+
+./configure xmms_input_plugin_dir=$HOME/.xmms/Plugins/Input
+
+to install the plugin into '$HOME/.xmms/Plugins/Input' in this case.
 
 CVS
 ---

@@ -1,4 +1,4 @@
-libdir = @XMMS_INPUT_PLUGIN_DIR@
+libdir = @xmms_input_plugin_dir@
 
 lib_LTLIBRARIES = libadplugxmms.la
 

@@ -1,6 +1,6 @@
 /*
    AdPlug/XMMS - AdPlug XMMS Plugin
-   Copyright (C) 2002 Simon Peter <dn.tlp@gmx.net>
+   Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -17,6 +17,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+#include <algorithm>
 #include <strstream.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,6 +27,7 @@
 #include <adplug/adplug.h>
 #include <adplug/emuopl.h>
 #include <adplug/silentopl.h>
+#include <adplug/players.h>
 #include <xmms/util.h>
 #include <xmms/plugin.h>
 #include <xmms/configfile.h>
@@ -49,9 +51,10 @@ static gboolean		audio_error = FALSE;
 
 // Configuration (and defaults)
 static struct {
-  unsigned long freq;
-  bool bit16, stereo, endless, quickdetect;
-} cfg = { 44100l, true, false, false, false };
+  gint		freq;
+  gboolean	bit16, stereo, endless, quickdetect;
+  CPlayers	players;
+} cfg = { 44100l, true, false, false, true, CAdPlug::players };
 
 // Player variables
 static struct {
@@ -129,7 +132,7 @@ static void adplug_about(void)
   ostrstream text;
 
   text << ADPLUG_XMMS_VERSION "\n"
-    "Copyright (C) 2002 Simon Peter <dn.tlp@gmx.net>\n\n"
+    "Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n\n"
     "This plugin is released under the terms and conditions of the GNU LGPL.\n"
     "See http://www.gnu.org/licenses/lgpl.html for details."
     "\n\nThis plugin uses the AdPlug library, which is copyright (C) Simon Peter, et al.\n"
@@ -153,12 +156,29 @@ static void close_config_box_ok(GtkButton *button, GPtrArray *rblist)
   cfg.endless = !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(g_ptr_array_index(rblist, 6)));
   cfg.quickdetect = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(g_ptr_array_index(rblist, 7)));
 
+  cfg.players = *(CPlayers *)g_ptr_array_index(rblist, 8);
+  delete (CPlayers *)g_ptr_array_index(rblist, 8);
+
   g_ptr_array_free(rblist, FALSE);
 }
 
 static void close_config_box_cancel(GtkButton *button, GPtrArray *rblist)
 {
+  delete (CPlayers *)g_ptr_array_index(rblist, 8);
   g_ptr_array_free(rblist, FALSE);
+}
+
+static void config_fl_row_select(GtkCList *fl, gint row, gint col,
+				 GdkEventButton *event, CPlayers *pl)
+{
+  pl->push_back((CPlayerDesc *)gtk_clist_get_row_data(fl, row));
+  pl->unique();
+}
+
+static void config_fl_row_unselect(GtkCList *fl, gint row, gint col,
+				   GdkEventButton *event, CPlayers *pl)
+{
+  pl->remove((CPlayerDesc *)gtk_clist_get_row_data(fl, row));
 }
 
 static void adplug_config(void)
@@ -166,6 +186,7 @@ static void adplug_config(void)
   GtkDialog *config_dlg = GTK_DIALOG(gtk_dialog_new());
   GtkNotebook *notebook = GTK_NOTEBOOK(gtk_notebook_new());
   GtkTable *table;
+  GtkTooltips *tooltips = gtk_tooltips_new();
   GPtrArray *rblist = g_ptr_array_new();
 
   gtk_window_set_title(GTK_WINDOW(config_dlg), "AdPlug :: Configuration");
@@ -235,6 +256,10 @@ static void adplug_config(void)
     rb = GTK_RADIO_BUTTON(gtk_radio_button_new_with_label_from_widget(rb, "Stereo"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb), cfg.stereo);
     gtk_container_add(GTK_CONTAINER(fvb), GTK_WIDGET(rb));
+    gtk_tooltips_set_tip(tooltips, GTK_WIDGET(rb),
+			 "Setting stereo is not recommended, unless you need to. "
+			 "This won't add any stereo effects to the sound - OPL2 "
+			 "is just mono - but eats up more CPU power!", NULL);
     g_ptr_array_add(rblist, (gpointer)rb);
 
     // Add "Frequency" section
@@ -270,13 +295,23 @@ static void adplug_config(void)
     cb = GTK_CHECK_BUTTON(gtk_check_button_new_with_label("Detect songend"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cb), !cfg.endless);
     gtk_container_add(GTK_CONTAINER(vb), GTK_WIDGET(cb));
+    gtk_tooltips_set_tip(tooltips, GTK_WIDGET(cb),
+			 "If enabled, XMMS will detect a song's ending, stop "
+			 "it and advance in the playlist. If disabled, XMMS "
+			 "won't take notice of a song's ending and loop it all "
+			 "over again and again.", NULL);
     g_ptr_array_add(rblist, (gpointer)cb);
 
     cb = GTK_CHECK_BUTTON(gtk_check_button_new_with_label("Quick file detection"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(cb), cfg.quickdetect);
     gtk_container_add(GTK_CONTAINER(vb), GTK_WIDGET(cb));
+    gtk_tooltips_set_tip(tooltips, GTK_WIDGET(cb),
+			 "If enabled, we'll try to determine a file's type by "
+			 "only looking at the file extension, instead of "
+			 "processing the file's contents. This speeds up the "
+			 "load time of files a lot, but can be inaccurate if "
+			 "the file has the wrong extension.", NULL);
     g_ptr_array_add(rblist, (gpointer)cb);
-    gtk_widget_set_state(GTK_WIDGET(cb), GTK_STATE_INSENSITIVE);
   }
 
   /***** Page 2: Formats *****/
@@ -286,12 +321,53 @@ static void adplug_config(void)
 
   // Add "Format selection" section
   {
-    GtkHBox *hb = GTK_HBOX(gtk_hbox_new(FALSE, 0));
-
-    gtk_table_attach_defaults(table, make_framed(GTK_WIDGET(hb), "Format selection"),
+    GtkHBox *vb = GTK_HBOX(gtk_hbox_new(FALSE, 0));
+    gtk_table_attach_defaults(table, make_framed(GTK_WIDGET(vb), "Format selection"),
 			      0, 1, 0, 1);
+    // Add scrollable list
+    {
+      gchar *rowstr[] = {"Format", "Extension"};
+      GtkEventBox *eventbox = GTK_EVENT_BOX(gtk_event_box_new());
+      GtkScrolledWindow *formatswnd = GTK_SCROLLED_WINDOW(gtk_scrolled_window_new(NULL, NULL));
+      GtkCList *fl = GTK_CLIST(gtk_clist_new_with_titles(2, rowstr));
+      CPlayers::const_iterator i;
+      unsigned int j;
+      gtk_clist_set_selection_mode(fl, GTK_SELECTION_MULTIPLE);
 
-    gtk_container_add(GTK_CONTAINER(hb), print_left("Not yet..."));
+      // Build list
+      for(i = CAdPlug::players.begin(); i != CAdPlug::players.end(); i++) {
+	gint rownum;
+
+	gchar *rws[2];
+	rws[0] = g_strdup((*i)->filetype.c_str());
+	rws[1] = g_strdup((*i)->get_extension(0));
+	for(j = 1; (*i)->get_extension(j); j++)
+	  rws[1] = g_strjoin(", ", rws[1], (*i)->get_extension(j), NULL);
+	rownum = gtk_clist_append(fl, rws);
+	g_free(rws[0]); g_free(rws[1]);
+	gtk_clist_set_row_data(fl, rownum, (gpointer)(*i));
+	if(find(cfg.players.begin(), cfg.players.end(), *i) != cfg.players.end())
+	  gtk_clist_select_row(fl, rownum, 0);
+      }
+
+      gtk_clist_columns_autosize(fl);
+      gtk_scrolled_window_set_policy(formatswnd, GTK_POLICY_AUTOMATIC,
+				     GTK_POLICY_AUTOMATIC);
+      gpointer pl = (gpointer)new CPlayers(cfg.players);
+      gtk_signal_connect(GTK_OBJECT(fl), "select-row",
+			 GTK_SIGNAL_FUNC(config_fl_row_select), pl);
+      gtk_signal_connect(GTK_OBJECT(fl), "unselect-row",
+			 GTK_SIGNAL_FUNC(config_fl_row_unselect), pl);
+      gtk_container_add(GTK_CONTAINER(formatswnd), GTK_WIDGET(fl));
+      gtk_container_add(GTK_CONTAINER(eventbox), GTK_WIDGET(formatswnd));
+      gtk_container_add(GTK_CONTAINER(vb), GTK_WIDGET(eventbox));
+      gtk_tooltips_set_tip(tooltips, GTK_WIDGET(eventbox),
+			   "Selected file types will be recognized and played "
+			   "back by this plugin. Deselected types will be "
+			   "ignored to make room for other plugins to play "
+			   "these files.", NULL);
+      g_ptr_array_add(rblist, pl);
+    }
   }
 
   // Show window
@@ -305,6 +381,30 @@ static void add_instlist(GtkCList *instlist, const char *t1, const char *t2)
   rowstr[0] = g_strdup(t1); rowstr[1] = g_strdup(t2);
   gtk_clist_append(instlist, rowstr);
   g_free(rowstr[0]); g_free(rowstr[1]);
+}
+
+static CPlayer *factory(const std::string &filename, Copl *newopl)
+/* Wrapper factory method that implements the "quick detect" feature. */
+{
+  CPlayer			*p;
+  CPlayers::const_iterator	i;
+  unsigned int			j;
+
+  if(cfg.quickdetect) {
+    // Quick detect! Just check according to file extensions.
+    for(i = cfg.players.begin(); i != cfg.players.end(); i++)
+      for(j = 0; (*i)->get_extension(j); j++)
+	if(CFileProvider::extension(filename, (*i)->get_extension(j)))
+	  if((p = (*i)->factory(newopl)))
+	    if(p->load(filename)) {
+	      dbg_printf("factory(\"%s\",opl): quick detected: %s\n",
+			 filename.c_str(), (*i)->filetype.c_str());
+	      return p;
+	    } else
+	      delete p;
+    return 0;	// quick detect failed.
+  } else	// just call AdPlug's original factory()
+    return CAdPlug::factory(filename, newopl, cfg.players);
 }
 
 static void adplug_stop(void);
@@ -331,7 +431,7 @@ static void adplug_info_box(char *filename)
 {
   CSilentopl tmpopl;
   CPlayer *p = (strcmp(filename, plr.filename) || !plr.p) ?
-    CAdPlug::factory(filename, &tmpopl) : plr.p;
+    factory(filename, &tmpopl) : plr.p;
 
   if(!p) return; // bail out if no player could be created
   if(p == plr.p && plr.infodlg) return; // only one info box for active song
@@ -484,7 +584,7 @@ static void *play_loop(void *filename)
   unsigned long freq = cfg.freq;
 
   // Try to load module
-  if(!(plr.p = CAdPlug::factory((char *)filename, &opl))) {
+  if(!(plr.p = factory((char *)filename, &opl))) {
     dbg_printf("play_loop(\"%s\"): File could not be opened! Bailing out...\n",
 	       (char *)filename);
     MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
@@ -492,7 +592,7 @@ static void *play_loop(void *filename)
   }
 
   // Cache song length
-  plr.songlength = CAdPlug::songlength(plr.p, plr.subsong);
+  plr.songlength = plr.p->songlength(plr.subsong);
 
   // cache song title
   if(!plr.p->gettitle().empty()) {
@@ -579,7 +679,7 @@ static void *play_loop(void *filename)
 static int adplug_is_our_file(char *filename)
 {
   CSilentopl tmpopl;
-  CPlayer *p = CAdPlug::factory(filename,&tmpopl);
+  CPlayer *p = factory(filename,&tmpopl);
 
   dbg_printf("adplug_is_our_file(\"%s\"): returned ",filename);
 
@@ -603,7 +703,7 @@ static int adplug_get_time(void)
 static void adplug_song_info(char *filename, char **title, int *length)
 {
   CSilentopl tmpopl;
-  CPlayer *p = CAdPlug::factory(filename, &tmpopl);
+  CPlayer *p = factory(filename, &tmpopl);
 
   dbg_printf("adplug_song_info(\"%s\", \"%s\", %d): ", filename, *title, *length);
 
@@ -617,7 +717,7 @@ static void adplug_song_info(char *filename, char **title, int *length)
     }
 
     // get song length
-    *length = CAdPlug::songlength(p, plr.subsong);
+    *length = p->songlength(plr.subsong);
 
     // delete temporary player object
     delete p;
@@ -682,6 +782,18 @@ static void adplug_init(void)
   xmms_cfg_read_boolean(f, CFG_VERSION, "Endless", (gboolean *)&cfg.endless);
   xmms_cfg_read_boolean(f, CFG_VERSION, "QuickDetect", (gboolean *)&cfg.quickdetect);
 
+  // Read file type exclusion list
+  {
+    gchar		*cfgstr = "", *exclude;
+    xmms_cfg_read_string(f, CFG_VERSION, "Exclude", &cfgstr);
+    exclude = new char [strlen(cfgstr) + 2]; strcpy(exclude, cfgstr);
+    exclude[strlen(exclude) + 1] = '\0'; free(cfgstr);
+    g_strdelimit(exclude, ":", '\0');
+    for(gchar *p = exclude; *p; p += strlen(p) + 1)
+      cfg.players.remove(cfg.players.lookup_filetype(p));
+    free(exclude);
+  }
+
   xmms_cfg_free(f);
 }
 
@@ -695,6 +807,17 @@ static void adplug_quit(void)
   xmms_cfg_write_int(f, CFG_VERSION, "Frequency", cfg.freq);
   xmms_cfg_write_boolean(f, CFG_VERSION, "Endless", cfg.endless);
   xmms_cfg_write_boolean(f, CFG_VERSION, "QuickDetect", cfg.quickdetect);
+
+  std::string exclude;
+  for(CPlayers::const_iterator i = CAdPlug::players.begin();
+      i != CAdPlug::players.end(); i++)
+    if(find(cfg.players.begin(), cfg.players.end(), *i) == cfg.players.end()) {
+      if(!exclude.empty()) exclude += ":";
+      exclude += (*i)->filetype;
+    }
+  gchar *cfgval = g_strdup(exclude.c_str());
+  xmms_cfg_write_string(f, CFG_VERSION, "Exclude", cfgval);
+  free(cfgval);
 
   xmms_cfg_write_default_file(f);
   xmms_cfg_free(f);
