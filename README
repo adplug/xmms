@@ -16,7 +16,7 @@ The following things are needed in order to compile this program:
 
 Item				Version
 ----				-------
-AdPlug library			>= 1.3
+AdPlug library			>= 1.4
 pthreads (POSIX threads)	*
 XMMS				>= 0.9.5.1
 GLib				>= 1.2

@@ -1,5 +1,5 @@
 %define name adplug-xmms
-%define version 1.0
+%define version 1.1
 %define release 1
 
 Summary: AdLib player plugin for XMMS
@@ -7,17 +7,16 @@ Name: %{name}
 Version: %{version}
 Release: %{release}
 Source0: %{name}-%{version}.tar.bz2
-Patch: adplug-xmms-1.0-gcc3.2.patch.bz2
 URL: http://adplug.sourceforge.net/
 License: LGPL
-Group: Sound
+Group: Applications/Multimedia
 BuildRoot: %{_tmppath}/%{name}-buildroot
 Prefix: %{_prefix}
 Requires: xmms
-Requires: adplug
+Requires: adplug >= 1.4
 BuildRequires: xmms-devel
 BuildRequires: gtk+-devel
-BuildRequires: adplug-devel
+BuildRequires: adplug-devel >= 1.4
 
 %description
 AdPlug/XMMS is an XMMS input plugin. XMMS is a cross-platform multimedia
@@ -28,7 +27,6 @@ No OPL2 chip is required for playback.
 
 %prep
 %setup -q
-%patch
 
 %build
 %configure
@@ -48,5 +46,10 @@ rm -rf $RPM_BUILD_ROOT
 %_libdir/xmms/Input/*so
 
 %changelog
+* Tue Mar  4 2003 Götz Waschk <waschk@linux-mandrake.com> 1.1-1
+- requires new adplug libs
+- fix group for RH standard
+- new version
+
 * Tue Nov 26 2002 Götz Waschk <waschk@linux-mandrake.com> 1.0-1
 - initial package
