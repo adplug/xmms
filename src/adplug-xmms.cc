@@ -640,10 +640,8 @@ static void *play_loop(void *filename)
   // main playback loop
   dbg_printf("loop.\n");
   while((playing || cfg.endless) && plr.playing) {
-    dbg_printf("play_loop(): ");
     // seek requested ?
     if(plr.seek != -1) {
-      dbg_printf("seek! ");
       // backward seek ?
       if(plr.seek < plr.time_ms) {
         plr.p->rewind(plr.subsong);
@@ -660,40 +658,31 @@ static void *play_loop(void *filename)
     }
 
     // fill sound buffer
-    dbg_printf("fill, ");
     towrite = SNDBUFSIZE; sndbufpos = sndbuf;
     while (towrite > 0) {
-      dbg_printf("{");
       while (toadd < 0) {
-	dbg_printf(".");
         toadd += freq;
 	playing = plr.p->update();
         plr.time_ms += 1000 / plr.p->getrefresh();
       }
       i = MIN(towrite, (long)(toadd / plr.p->getrefresh() + 4) & ~3);
-      dbg_printf("-");
       opl.update((short *)sndbufpos, i);
-      dbg_printf("}");
       sndbufpos += i * sampsize; towrite -= i;
       toadd -= (long)(plr.p->getrefresh() * i);
     }
 
     // write sound buffer and update vis
-    dbg_printf("vis, ");
     adplug_ip.add_vis_pcm(adplug_ip.output->written_time(),
 			  bit16 ? FORMAT_16 : FORMAT_8,
 			  stereo ? 2 : 1, SNDBUFSIZE * sampsize, sndbuf);
-    dbg_printf("wait, ");
     while(adplug_ip.output->buffer_free() < SNDBUFSIZE * sampsize) xmms_usleep(10000);
-    dbg_printf("write, ");
     adplug_ip.output->write_audio(sndbuf, SNDBUFSIZE * sampsize);
 
     // update infobox, if necessary
-    dbg_printf("info");
     if(plr.infobox && plr.playing) update_infobox();
-    dbg_printf(".\n");
   }
 
+  // playback finished - deinit
   dbg_printf("play_loop(\"%s\"): ", (char *)filename);
   if(!playing) { // wait for output plugin to finish if song has self-ended
     dbg_printf("wait, ");
