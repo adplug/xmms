@@ -1,6 +1,6 @@
 # Tell autoconf we're compiling a dynamic dlopen()'d C++ library (also
 # called 'plugin' ;) ) using automake and libtool.
-AC_INIT(adplug-xmms,1.1)
+AC_INIT(adplug-xmms,1.2)
 AC_CONFIG_SRCDIR(src/adplug-xmms.cc)
 AC_CONFIG_FILES(Makefile src/Makefile)
 AM_INIT_AUTOMAKE
