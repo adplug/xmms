@@ -17,7 +17,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <strstream>
+#include <strstream.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -33,19 +33,19 @@
 /***** Defines *****/
 
 // Version string
-#define ADPLUG_XMMS_VERSION "AdPlug/XMMS " VERSION
+#define ADPLUG_XMMS_VERSION	"AdPlug/XMMS " VERSION
 
 // Sound buffer size in samples
-#define SNDBUFSIZE 512
+#define SNDBUFSIZE	512
 
 // AdPlug's 8 and 16 bit audio formats
-#define FORMAT_8  FMT_U8
-#define FORMAT_16 FMT_S16_NE
+#define FORMAT_8	FMT_U8
+#define FORMAT_16	FMT_S16_NE
 
 /***** Global variables *****/
 
-extern "C" InputPlugin adplug_ip;
-static gboolean audio_error = FALSE;
+extern "C" InputPlugin	adplug_ip;
+static gboolean		audio_error = FALSE;
 
 // Configuration (and defaults)
 static struct {
@@ -55,16 +55,16 @@ static struct {
 
 // Player variables
 static struct {
-  CPlayer *p;
-  unsigned int subsong, songlength;
-  int seek;
-  char filename[PATH_MAX];
-  char *songtitle;
-  float time_ms;
-  bool playing;
-  pthread_t play_thread;
-  GtkLabel *infobox;
-  GtkDialog *infodlg;
+  CPlayer	*p;
+  unsigned int	subsong, songlength;
+  int		seek;
+  char		filename[PATH_MAX];
+  char		*songtitle;
+  float		time_ms;
+  bool		playing;
+  pthread_t	play_thread;
+  GtkLabel	*infobox;
+  GtkDialog	*infodlg;
 } plr = { NULL, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL, NULL };
 
 /***** Debugging *****/
