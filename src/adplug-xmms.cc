@@ -583,15 +583,18 @@ static void update_infobox(void)
 }
 
 // Define sampsize macro (only usable inside play_loop()!)
-#define sampsize (1 * (bit16 ? 2 : 1) * (stereo ? 2 : 1))
+#define sampsize ((bit16 ? 2 : 1) * (stereo ? 2 : 1))
 
 static void *play_loop(void *filename)
+/* Main playback thread. Takes the filename to play as argument. */
 {
   dbg_printf("play_loop(\"%s\"): ", (char *)filename);
   CEmuopl opl(cfg.freq, cfg.bit16, cfg.stereo);
   long toadd = 0, i, towrite;
   char *sndbuf, *sndbufpos;
-  bool playing = true, bit16 = cfg.bit16, stereo = cfg.stereo;
+  bool playing = true,		// Song self-end indicator.
+    bit16 = cfg.bit16,		// Duplicate config, so it doesn't affect us if
+    stereo = cfg.stereo;	// the user changes it while we're playing.
   unsigned long freq = cfg.freq;
 
   // Try to load module
@@ -599,6 +602,7 @@ static void *play_loop(void *filename)
   if(!(plr.p = factory((char *)filename, &opl))) {
     dbg_printf("error!\n");
     MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
+    plr.playing = false;
     pthread_exit(NULL);
   }
 
@@ -636,15 +640,17 @@ static void *play_loop(void *filename)
   // main playback loop
   dbg_printf("loop.\n");
   while((playing || cfg.endless) && plr.playing) {
+    dbg_printf("play_loop(): ");
     // seek requested ?
-    if (plr.seek != -1) {
+    if(plr.seek != -1) {
+      dbg_printf("seek! ");
       // backward seek ?
-      if (plr.seek < plr.time_ms) {
+      if(plr.seek < plr.time_ms) {
         plr.p->rewind(plr.subsong);
         plr.time_ms = 0.0f;
       }
 
-      // seek to needed position
+      // seek to requested position
       while((plr.time_ms < plr.seek) && plr.p->update())
         plr.time_ms += 1000 / plr.p->getrefresh();
 
@@ -654,28 +660,36 @@ static void *play_loop(void *filename)
     }
 
     // fill sound buffer
+    dbg_printf("fill, ");
     towrite = SNDBUFSIZE; sndbufpos = sndbuf;
     while (towrite > 0) {
+      dbg_printf(".");
       while (toadd < 0) {
+	dbg_printf("-");
         toadd += freq;
 	playing = plr.p->update();
         plr.time_ms += 1000 / plr.p->getrefresh();
       }
-      i = MIN(towrite,(long)(toadd / plr.p->getrefresh() + 4) & ~3);
+      i = MIN(towrite, (long)(toadd / plr.p->getrefresh() + 4) & ~3);
       opl.update((short *)sndbufpos, i);
       sndbufpos += i * sampsize; towrite -= i;
       toadd -= (long)(plr.p->getrefresh() * i);
     }
 
     // write sound buffer and update vis
+    dbg_printf("vis, ");
     adplug_ip.add_vis_pcm(adplug_ip.output->written_time(),
 			  bit16 ? FORMAT_16 : FORMAT_8,
 			  stereo ? 2 : 1, SNDBUFSIZE * sampsize, sndbuf);
+    dbg_printf("wait, ");
     while(adplug_ip.output->buffer_free() < SNDBUFSIZE * sampsize) xmms_usleep(10000);
+    dbg_printf("write, ");
     adplug_ip.output->write_audio(sndbuf, SNDBUFSIZE * sampsize);
 
     // update infobox, if necessary
+    dbg_printf("info");
     if(plr.infobox && plr.playing) update_infobox();
+    dbg_printf(".\n");
   }
 
   dbg_printf("play_loop(\"%s\"): ", (char *)filename);
@@ -690,12 +704,15 @@ static void *play_loop(void *filename)
   // free everything and exit
   dbg_printf("free");
   delete plr.p; plr.p = 0;
-  if(plr.songtitle) { free(plr.songtitle); plr.songtitle = 0; }
+  if(plr.songtitle) { free(plr.songtitle); plr.songtitle = NULL; }
   free(sndbuf);
   plr.playing = false; // important! XMMS won't get a self-ended song without it.
   dbg_printf(".\n");
   pthread_exit(NULL);
 }
+
+// sampsize macro not useful anymore.
+#undef sampsize
 
 /***** Informational *****/
 
@@ -768,7 +785,9 @@ static void adplug_play(char *filename)
     return;
   }
 
-  // Initialize global player data (important! XMMS segfaults if it's not in here!)
+  // Initialize global player data (this is here to prevent a race condition
+  // between adplug_get_time() returning the playback state and adplug_loop()
+  // initializing the playback state)
   dbg_printf("init, ");
   plr.playing = true; plr.time_ms = 0.0f; plr.seek = -1;
 
