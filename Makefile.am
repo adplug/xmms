@@ -1,5 +1,13 @@
-bin_PROGRAMS=adplug-xmms
+libdir = @XMMS_INPUT_PLUGIN_DIR@
 
-adplug_xmms_SOURCES=adplug-xmms.cc
+lib_LTLIBRARIES = libadplugxmms.la
+
+libadplugxmms_la_LDFLAGS = -lstdc++ -module -avoid-version
+
+libadplugxmms_la_SOURCES = adplug-xmms.cc
+
+libadplugxmms_la_LIBADD = @XMMS_LIBS@ @PTHREAD_LIBS@
+
+AM_CPPFLAGS = @XMMS_CFLAGS@ @PTHREAD_CFLAGS@
 
 AUTOMAKE_OPTIONS = dist-bzip2
