@@ -18,7 +18,7 @@
 */
 
 #include <algorithm>
-#include <strstream.h>
+#include <sstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -44,6 +44,12 @@
 #define FORMAT_8	FMT_U8
 #define FORMAT_16	FMT_S16_NE
 
+// Default file name of AdPlug's database file
+#define ADPLUGDB_FILE		"adplug.db"
+
+// Default AdPlug user's configuration subdirectory
+#define ADPLUG_CONFDIR		".adplug"
+
 /***** Global variables *****/
 
 extern "C" InputPlugin	adplug_ip;
@@ -58,17 +64,18 @@ static struct {
 
 // Player variables
 static struct {
-  CPlayer	*p;
-  unsigned int	subsong, songlength;
-  int		seek;
-  char		filename[PATH_MAX];
-  char		*songtitle;
-  float		time_ms;
-  bool		playing;
-  pthread_t	play_thread;
-  GtkLabel	*infobox;
-  GtkDialog	*infodlg;
-} plr = { NULL, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL, NULL };
+  CPlayer		*p;
+  CAdPlugDatabase	*db;
+  unsigned int		subsong, songlength;
+  int			seek;
+  char			filename[PATH_MAX];
+  char			*songtitle;
+  float			time_ms;
+  bool			playing;
+  pthread_t		play_thread;
+  GtkLabel		*infobox;
+  GtkDialog		*infodlg;
+} plr = { 0, 0, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL, NULL };
 
 /***** Debugging *****/
 
@@ -129,17 +136,16 @@ static void MessageBox(const char *title, const char *text, const char *button)
 
 static void adplug_about(void)
 {
-  ostrstream text;
+  std::ostringstream text;
 
   text << ADPLUG_XMMS_VERSION "\n"
     "Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n\n"
     "This plugin is released under the terms and conditions of the GNU LGPL.\n"
     "See http://www.gnu.org/licenses/lgpl.html for details."
     "\n\nThis plugin uses the AdPlug library, which is copyright (C) Simon Peter, et al.\n"
-    "Linked AdPlug library version: " << CAdPlug::get_version() << ends;
+    "Linked AdPlug library version: " << CAdPlug::get_version() << std::ends;
 
-  MessageBox("About " ADPLUG_XMMS_VERSION, text.str(), "Ugh!");
-  text.freeze(0);
+  MessageBox("About " ADPLUG_XMMS_VERSION, text.str().c_str(), "Ugh!");
 }
 
 static void close_config_box_ok(GtkButton *button, GPtrArray *rblist)
@@ -436,7 +442,7 @@ static void adplug_info_box(char *filename)
   if(!p) return; // bail out if no player could be created
   if(p == plr.p && plr.infodlg) return; // only one info box for active song
 
-  ostrstream infotext;
+  std::ostringstream infotext;
   unsigned int i;
   GtkDialog *infobox = GTK_DIALOG(gtk_dialog_new());
   GtkButton *okay_button = GTK_BUTTON(gtk_button_new_with_label("Ok"));
@@ -461,20 +467,19 @@ static void adplug_info_box(char *filename)
 			  GTK_SIDE_TOP, GTK_ANCHOR_CENTER, GTK_FILL_X);
 
   // Add "Song info" section
-  infotext << "Title: " << p->gettitle() << endl <<
-    "Author: " << p->getauthor() << endl <<
-    "File Type: " << p->gettype() << endl <<
-    "Subsongs: " << p->getsubsongs() << endl <<
+  infotext << "Title: " << p->gettitle() << std::endl <<
+    "Author: " << p->getauthor() << std::endl <<
+    "File Type: " << p->gettype() << std::endl <<
+    "Subsongs: " << p->getsubsongs() << std::endl <<
     "Instruments: " << p->getinstruments();
   if(plr.p == p)
-    infotext << ends;
+    infotext << std::ends;
   else {
-    infotext << endl << "Orders: " << p->getorders() << endl <<
-      "Patterns: " << p->getpatterns() << ends;
+    infotext << std::endl << "Orders: " << p->getorders() << std::endl <<
+      "Patterns: " << p->getpatterns() << std::ends;
   }
   gtk_container_add(GTK_CONTAINER(hbox),
-		    make_framed(print_left(infotext.str()), "Song"));
-  infotext.freeze(0); // unfreeze info text
+		    make_framed(print_left(infotext.str().c_str()), "Song"));
 
   // Add "Playback info" section if currently playing
   if(plr.p == p) {
@@ -558,17 +563,17 @@ static void adplug_info_box(char *filename)
 
 static void update_infobox(void)
 {
-  ostrstream infotext;
+  std::ostringstream infotext;
 
   // Recreate info string
   infotext << "Order: " << plr.p->getorder() << " / " << plr.p->getorders() <<
-    endl << "Pattern: " << plr.p->getpattern() << " / " << plr.p->getpatterns() <<
-    endl << "Row: " << plr.p->getrow() << endl << "Speed: " <<
-    plr.p->getspeed() << endl << "Timer: " << plr.p->getrefresh() << "Hz" << ends;
+    std::endl << "Pattern: " << plr.p->getpattern() << " / " <<
+    plr.p->getpatterns() << std::endl << "Row: " << plr.p->getrow() <<
+    std::endl << "Speed: " << plr.p->getspeed() << std::endl << "Timer: " <<
+    plr.p->getrefresh() << "Hz" << std::ends;
 
   GDK_THREADS_ENTER();
-  gtk_label_set_text(plr.infobox, infotext.str());
-  infotext.freeze(0); // Unfreeze infotext
+  gtk_label_set_text(plr.infobox, infotext.str().c_str());
   GDK_THREADS_LEAVE();
 }
 
@@ -793,13 +798,33 @@ static void adplug_init(void)
       cfg.players.remove(cfg.players.lookup_filetype(p));
     free(exclude);
   }
-
   xmms_cfg_free(f);
+
+  // Load database from disk and hand it to AdPlug
+  plr.db = new CAdPlugDatabase;
+
+  // Try user's home directory first, before trying the default location.
+  {
+    const char *homedir = getenv("HOME");
+
+    if(homedir) {
+      char *userdb = (char *)malloc(strlen(homedir) + strlen(ADPLUG_CONFDIR) +
+				    strlen(ADPLUGDB_FILE) + 3);
+      strcpy(userdb, homedir); strcat(userdb, "/" ADPLUG_CONFDIR "/");
+      strcat(userdb, ADPLUGDB_FILE);
+      plr.db->load(userdb);		// load user's database
+    }
+  }
+  plr.db->load(ADPLUG_DATA_DIR "/" ADPLUGDB_FILE);	// load system-wide database
+  CAdPlug::set_database(plr.db);
 }
 
 static void adplug_quit(void)
 {
   ConfigFile *f = xmms_cfg_open_default_file();
+
+  // Close database
+  if(plr.db) delete plr.db;
 
   // Write configuration
   xmms_cfg_write_boolean(f, CFG_VERSION, "16bit", cfg.bit16);

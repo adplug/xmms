@@ -8,4 +8,7 @@ libadplugxmms_la_SOURCES = adplug-xmms.cc
 
 libadplugxmms_la_LIBADD = @XMMS_LIBS@ @PTHREAD_LIBS@
 
-AM_CPPFLAGS = @XMMS_CFLAGS@ @PTHREAD_CFLAGS@
+adplug_data_dir = $(datadir)/adplug
+
+AM_CPPFLAGS = @XMMS_CFLAGS@ @PTHREAD_CFLAGS@ \
+	-DADPLUG_DATA_DIR=\"$(adplug_data_dir)\"
