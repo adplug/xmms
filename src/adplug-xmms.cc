@@ -396,21 +396,26 @@ static CPlayer *factory(const std::string &filename, Copl *newopl)
   CPlayers::const_iterator	i;
   unsigned int			j;
 
+  dbg_printf("factory(\"%s\",opl): ", filename.c_str());
   if(cfg.quickdetect) {
     // Quick detect! Just check according to file extensions.
+    dbg_printf("quick detect: ");
     for(i = cfg.players.begin(); i != cfg.players.end(); i++)
       for(j = 0; (*i)->get_extension(j); j++)
 	if(CFileProvider::extension(filename, (*i)->get_extension(j)))
 	  if((p = (*i)->factory(newopl)))
 	    if(p->load(filename)) {
-	      dbg_printf("factory(\"%s\",opl): quick detected: %s\n",
-			 filename.c_str(), (*i)->filetype.c_str());
+	      dbg_printf("%s\n", (*i)->filetype.c_str());
 	      return p;
 	    } else
 	      delete p;
+
+    dbg_printf("failed!\n");
     return 0;	// quick detect failed.
-  } else	// just call AdPlug's original factory()
+  } else {	// just call AdPlug's original factory()
+    dbg_printf("asking AdPlug...\n");
     return CAdPlug::factory(filename, newopl, cfg.players);
+  }
 }
 
 static void adplug_stop(void);
@@ -582,6 +587,7 @@ static void update_infobox(void)
 
 static void *play_loop(void *filename)
 {
+  dbg_printf("play_loop(\"%s\"): ", (char *)filename);
   CEmuopl opl(cfg.freq, cfg.bit16, cfg.stereo);
   long toadd = 0, i, towrite;
   char *sndbuf, *sndbufpos;
@@ -589,39 +595,46 @@ static void *play_loop(void *filename)
   unsigned long freq = cfg.freq;
 
   // Try to load module
+  dbg_printf("factory, ");
   if(!(plr.p = factory((char *)filename, &opl))) {
-    dbg_printf("play_loop(\"%s\"): File could not be opened! Bailing out...\n",
-	       (char *)filename);
+    dbg_printf("error!\n");
     MessageBox("AdPlug :: Error", "File could not be opened!", "Ok");
     pthread_exit(NULL);
   }
 
   // Cache song length
+  dbg_printf("length, ");
   plr.songlength = plr.p->songlength(plr.subsong);
 
   // cache song title
+  dbg_printf("title, ");
   if(!plr.p->gettitle().empty()) {
     plr.songtitle = (char *)malloc(plr.p->gettitle().length() + 1);
     strcpy(plr.songtitle, plr.p->gettitle().c_str());
   }
 
   // reset to first subsong on new file
+  dbg_printf("subsong, ");
   if(strcmp((char *)filename, plr.filename)) {
     strcpy(plr.filename, (char *)filename);
     plr.subsong = 0;
   }
 
   // Allocate audio buffer
+  dbg_printf("buffer, ");
   sndbuf = (char *)malloc(SNDBUFSIZE * sampsize);
 
   // Set XMMS main window information
+  dbg_printf("xmms, ");
   adplug_ip.set_info(plr.songtitle, plr.songlength, freq * sampsize * 8,
 		     freq, stereo ? 2 : 1);
 
   // Rewind player to right subsong
+  dbg_printf("rewind, ");
   plr.p->rewind(plr.subsong);
 
   // main playback loop
+  dbg_printf("loop.\n");
   while((playing || cfg.endless) && plr.playing) {
     // seek requested ?
     if (plr.seek != -1) {
@@ -665,17 +678,22 @@ static void *play_loop(void *filename)
     if(plr.infobox && plr.playing) update_infobox();
   }
 
-  if(!playing) // wait for output plugin to finish if song has self-ended
+  dbg_printf("play_loop(\"%s\"): ", (char *)filename);
+  if(!playing) { // wait for output plugin to finish if song has self-ended
+    dbg_printf("wait, ");
     while(adplug_ip.output->buffer_playing()) xmms_usleep(10000);
-  else { // or else, flush its output buffers
+  } else { // or else, flush its output buffers
+    dbg_printf("flush, ");
     adplug_ip.output->buffer_free(); adplug_ip.output->buffer_free();
   }
 
   // free everything and exit
+  dbg_printf("free");
   delete plr.p; plr.p = 0;
   if(plr.songtitle) { free(plr.songtitle); plr.songtitle = 0; }
   free(sndbuf);
   plr.playing = false; // important! XMMS won't get a self-ended song without it.
+  dbg_printf(".\n");
   pthread_exit(NULL);
 }
 
@@ -700,8 +718,8 @@ static int adplug_is_our_file(char *filename)
 
 static int adplug_get_time(void)
 {
-  if(audio_error) return -2;
-  if(!plr.playing) return -1;
+  if(audio_error) { dbg_printf("adplug_get_time(): returned -2\n"); return -2; }
+  if(!plr.playing) { dbg_printf("adplug_get_time(): returned -1\n"); return -1; }
   return adplug_ip.output->output_time();
 }
 
@@ -735,40 +753,48 @@ static void adplug_song_info(char *filename, char **title, int *length)
 
 static void adplug_play(char *filename)
 {
-  dbg_printf("adplug_play(\"%s\")\n", filename);
+  dbg_printf("adplug_play(\"%s\"): ", filename);
   audio_error = FALSE;
 
   // On new song, re-open "Song info" dialog, if open
+  dbg_printf("dialog, ");
   if(plr.infobox && strcmp(filename, plr.filename))
     gtk_widget_destroy(GTK_WIDGET(plr.infodlg));
 
   // open output plugin
+  dbg_printf("open, ");
   if (!adplug_ip.output->open_audio(cfg.bit16 ? FORMAT_16 : FORMAT_8, cfg.freq, cfg.stereo ? 2 : 1)) {
     audio_error = TRUE;
     return;
   }
 
   // Initialize global player data (important! XMMS segfaults if it's not in here!)
+  dbg_printf("init, ");
   plr.playing = true; plr.time_ms = 0.0f; plr.seek = -1;
 
   // start player thread
+  dbg_printf("create");
   pthread_create(&plr.play_thread, NULL, play_loop, filename);
+  dbg_printf(".\n");
 }
 
 static void adplug_stop(void)
 {
+  dbg_printf("adplug_stop(): join, ");
   plr.playing = false; pthread_join(plr.play_thread,NULL); // stop player thread
-  adplug_ip.output->close_audio(); // close output plugin
-  dbg_printf("adplug_stop(): stopped player!\n");
+  dbg_printf("close"); adplug_ip.output->close_audio();
+  dbg_printf(".\n");
 }
 
 static void adplug_pause(short paused)
 {
+  dbg_printf("adplug_pause(%d)\n", paused);
   adplug_ip.output->pause(paused);
 }
 
 static void adplug_seek(int time)
 {
+  dbg_printf("adplug_seek(%d)\n", time);
   plr.seek = time * 1000; // time is in seconds, but we count in ms
 }
 
@@ -778,9 +804,11 @@ static void adplug_seek(int time)
 
 static void adplug_init(void)
 {
+  dbg_printf("adplug_init(): open, ");
   ConfigFile *f = xmms_cfg_open_default_file();
 
   // Read configuration
+  dbg_printf("read, ");
   xmms_cfg_read_boolean(f, CFG_VERSION, "16bit", (gboolean *)&cfg.bit16);
   xmms_cfg_read_boolean(f, CFG_VERSION, "Stereo", (gboolean *)&cfg.stereo);
   xmms_cfg_read_int(f, CFG_VERSION, "Frequency", (gint *)&cfg.freq);
@@ -788,6 +816,7 @@ static void adplug_init(void)
   xmms_cfg_read_boolean(f, CFG_VERSION, "QuickDetect", (gboolean *)&cfg.quickdetect);
 
   // Read file type exclusion list
+  dbg_printf("exclusion, ");
   {
     gchar *cfgstr = "", *exclude;
     gboolean cfgread;
@@ -804,6 +833,7 @@ static void adplug_init(void)
   xmms_cfg_free(f);
 
   // Load database from disk and hand it to AdPlug
+  dbg_printf("database");
   plr.db = new CAdPlugDatabase;
 
   // Try user's home directory first, before trying the default location.
@@ -816,26 +846,32 @@ static void adplug_init(void)
       strcpy(userdb, homedir); strcat(userdb, "/" ADPLUG_CONFDIR "/");
       strcat(userdb, ADPLUGDB_FILE);
       plr.db->load(userdb);		// load user's database
+      dbg_printf(" (userdb=\"%s\")", userdb);
     }
   }
   plr.db->load(ADPLUG_DATA_DIR "/" ADPLUGDB_FILE);	// load system-wide database
   CAdPlug::set_database(plr.db);
+  dbg_printf(".\n");
 }
 
 static void adplug_quit(void)
 {
+  dbg_printf("adplug_quit(): open, ");
   ConfigFile *f = xmms_cfg_open_default_file();
 
   // Close database
+  dbg_printf("db, ");
   if(plr.db) delete plr.db;
 
   // Write configuration
+  dbg_printf("write, ");
   xmms_cfg_write_boolean(f, CFG_VERSION, "16bit", cfg.bit16);
   xmms_cfg_write_boolean(f, CFG_VERSION, "Stereo", cfg.stereo);
   xmms_cfg_write_int(f, CFG_VERSION, "Frequency", cfg.freq);
   xmms_cfg_write_boolean(f, CFG_VERSION, "Endless", cfg.endless);
   xmms_cfg_write_boolean(f, CFG_VERSION, "QuickDetect", cfg.quickdetect);
 
+  dbg_printf("exclude, ");
   std::string exclude;
   for(CPlayers::const_iterator i = CAdPlug::players.begin();
       i != CAdPlug::players.end(); i++)
@@ -847,8 +883,10 @@ static void adplug_quit(void)
   xmms_cfg_write_string(f, CFG_VERSION, "Exclude", cfgval);
   free(cfgval);
 
+  dbg_printf("close");
   xmms_cfg_write_default_file(f);
   xmms_cfg_free(f);
+  dbg_printf(".\n");
 }
 
 /***** Plugin (exported) *****/
