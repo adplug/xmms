@@ -2,3 +2,5 @@ AdPlug/XMMS To Do List:
 -----------------------
 - Implement "Formats" config-dialog tab
 - Implement "Quick detect" feature
+- Make plugin install directory user-definable
+- Add VPATH directory to plugin directory, so distcheck works again
