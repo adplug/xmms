@@ -1,5 +1,3 @@
 AdPlug/XMMS To Do List:
 -----------------------
-- Add VPATH to plugin directory, using distcheck-hook, so distcheck works
-  again
 - Split adplug-xmms.cc into multiple source files

@@ -20,6 +20,11 @@ ACX_PTHREAD(,AC_MSG_ERROR([*** POSIX threads not installed ***]))
 AC_CHECK_LIB(adplug,main,,AC_MSG_ERROR([*** AdPlug not installed ***]))
 AM_PATH_XMMS(0.9.5.1,,AC_MSG_ERROR([*** XMMS >= 0.9.5.1 not installed ***]))
 
+# Determine plugin installation directory
+if test x${adplug_distcheck} == xyes; then
+   xmms_input_plugin_dir=${libdir}
+fi
+
 if test x${xmms_input_plugin_dir} == x; then
    xmms_input_plugin_dir=${XMMS_INPUT_PLUGIN_DIR}
 else
