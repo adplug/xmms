@@ -1,0 +1,17 @@
+.deps
+.libs
+INSTALL
+Makefile
+Makefile.in
+aclocal.m4
+*.lo
+autom4te.cache
+config.log
+config.status
+configure
+depcomp
+install-sh
+*.la
+libtool
+missing
+mkinstalldirs
