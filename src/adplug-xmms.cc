@@ -789,10 +789,13 @@ static void adplug_init(void)
 
   // Read file type exclusion list
   {
-    gchar		*cfgstr = "", *exclude;
-    xmms_cfg_read_string(f, CFG_VERSION, "Exclude", &cfgstr);
-    exclude = new char [strlen(cfgstr) + 2]; strcpy(exclude, cfgstr);
-    exclude[strlen(exclude) + 1] = '\0'; free(cfgstr);
+    gchar *cfgstr = "", *exclude;
+    gboolean cfgread;
+
+    cfgread = xmms_cfg_read_string(f, CFG_VERSION, "Exclude", &cfgstr);
+    exclude = (char *)malloc(strlen(cfgstr) + 2); strcpy(exclude, cfgstr);
+    exclude[strlen(exclude) + 1] = '\0';
+    if(cfgread) free(cfgstr);
     g_strdelimit(exclude, ":", '\0');
     for(gchar *p = exclude; *p; p += strlen(p) + 1)
       cfg.players.remove(cfg.players.lookup_filetype(p));
