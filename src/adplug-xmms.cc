@@ -663,15 +663,17 @@ static void *play_loop(void *filename)
     dbg_printf("fill, ");
     towrite = SNDBUFSIZE; sndbufpos = sndbuf;
     while (towrite > 0) {
-      dbg_printf(".");
+      dbg_printf("{");
       while (toadd < 0) {
-	dbg_printf("-");
+	dbg_printf(".");
         toadd += freq;
 	playing = plr.p->update();
         plr.time_ms += 1000 / plr.p->getrefresh();
       }
       i = MIN(towrite, (long)(toadd / plr.p->getrefresh() + 4) & ~3);
+      dbg_printf("-");
       opl.update((short *)sndbufpos, i);
+      dbg_printf("}");
       sndbufpos += i * sampsize; towrite -= i;
       toadd -= (long)(plr.p->getrefresh() * i);
     }
