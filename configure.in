@@ -1,0 +1,17 @@
+# Tell autoconf we're compiling a C++ program using automake and libtool.
+AC_INIT(adplug-xmms,1.0)
+AC_CONFIG_SRCDIR(adplug-xmms.cc)
+AC_CONFIG_FILES(Makefile)
+AM_INIT_AUTOMAKE
+AM_PROG_LIBTOOL
+AC_LANG(C++)
+
+# Check if we got a sane C/C++ compilation environment.
+AC_PROG_INSTALL
+AC_PROG_CC
+AC_PROG_CXX
+
+# Nothing works without the AdPlug core library...
+AC_CHECK_LIB(adplug,main,,[AC_MSG_ERROR([AdPlug not found!])])
+
+AC_OUTPUT
