@@ -64,7 +64,8 @@ static struct {
   bool playing;
   pthread_t play_thread;
   GtkLabel *infobox;
-} plr = { NULL, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL };
+  GtkDialog *infodlg;
+} plr = { NULL, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL, NULL };
 
 /***** Debugging *****/
 
@@ -260,7 +261,7 @@ static void adplug_config(void)
 
   // Add "Playback" section
   {
-    GtkVBox *vb = GTK_VBOX(gtk_vbox_new(TRUE, 0));
+    GtkVBox *vb = GTK_VBOX(gtk_vbox_new(FALSE, 0));
     GtkCheckButton *cb;
 
     gtk_table_attach_defaults(table, make_framed(GTK_WIDGET(vb), "Playback"),
@@ -316,9 +317,14 @@ static void subsong_slider(GtkAdjustment *adj)
   adplug_play(plr.filename);
 }
 
-static void close_infobox(void)
+static void close_infobox(GtkDialog *infodlg)
 {
-  plr.infobox = NULL;
+  // Forget our references to the instance of the "currently playing song" info
+  // box. But only if we're really destroying that one... ;)
+  if(infodlg == plr.infodlg) {
+    plr.infobox = NULL;
+    plr.infodlg = NULL;
+  }
 }
 
 static void adplug_info_box(char *filename)
@@ -326,14 +332,16 @@ static void adplug_info_box(char *filename)
   CSilentopl tmpopl;
   CPlayer *p = (strcmp(filename, plr.filename) || !plr.p) ?
     CAdPlug::factory(filename, &tmpopl) : plr.p;
+
+  if(!p) return; // bail out if no player could be created
+  if(p == plr.p && plr.infodlg) return; // only one info box for active song
+
   ostrstream infotext;
   unsigned int i;
   GtkDialog *infobox = GTK_DIALOG(gtk_dialog_new());
   GtkButton *okay_button = GTK_BUTTON(gtk_button_new_with_label("Ok"));
   GtkPacker *packer = GTK_PACKER(gtk_packer_new());
   GtkHBox *hbox = GTK_HBOX(gtk_hbox_new(TRUE, 2));
-
-  if(!p) return; // bail out if no player could be created
 
   // Build file info box
   gtk_window_set_title(GTK_WINDOW(infobox), "AdPlug :: File Info");
@@ -344,6 +352,8 @@ static void adplug_info_box(char *filename)
   gtk_signal_connect_object(GTK_OBJECT(okay_button), "clicked",
 			    GTK_SIGNAL_FUNC(gtk_widget_destroy),
 			    GTK_OBJECT(infobox));
+  gtk_signal_connect(GTK_OBJECT(infobox), "destroy",
+		     GTK_SIGNAL_FUNC(close_infobox), 0);
   gtk_container_add(GTK_CONTAINER(infobox->action_area), GTK_WIDGET(okay_button));
 
   // Add filename section
@@ -371,8 +381,6 @@ static void adplug_info_box(char *filename)
     plr.infobox = GTK_LABEL(gtk_label_new(""));
     gtk_label_set_justify(plr.infobox, GTK_JUSTIFY_LEFT);
     gtk_misc_set_padding(GTK_MISC(plr.infobox), 2, 2);
-    gtk_signal_connect(GTK_OBJECT(plr.infobox), "destroy",
-		       GTK_SIGNAL_FUNC(close_infobox), NULL);
     gtk_container_add(GTK_CONTAINER(hbox),
 		      make_framed(GTK_WIDGET(plr.infobox), "Playback"));
   }
@@ -440,7 +448,10 @@ static void adplug_info_box(char *filename)
 
   // Show dialog box
   gtk_widget_show_all(GTK_WIDGET(infobox));
-  if(p != plr.p) delete p;
+  if(p == plr.p) { // Remember widget, so we could destroy it later
+    plr.infodlg = infobox;
+  } else // Delete temporary player
+    delete p;
 }
 
 /***** Main player (!! threaded !!) *****/
@@ -546,7 +557,7 @@ static void *play_loop(void *filename)
     adplug_ip.output->write_audio(sndbuf, SNDBUFSIZE * sampsize);
 
     // update infobox, if necessary
-    if(plr.infobox) update_infobox();
+    if(plr.infobox && plr.playing) update_infobox();
   }
 
   if(!playing) // wait for output plugin to finish if song has self-ended
@@ -621,6 +632,10 @@ static void adplug_play(char *filename)
 {
   dbg_printf("adplug_play(\"%s\")\n", filename);
   audio_error = FALSE;
+
+  // On new song, re-open "Song info" dialog, if open
+  if(plr.infobox && strcmp(filename, plr.filename))
+    gtk_widget_destroy(GTK_WIDGET(plr.infodlg));
 
   // open output plugin
   if (!adplug_ip.output->open_audio(cfg.bit16 ? FORMAT_16 : FORMAT_8, cfg.freq, cfg.stereo ? 2 : 1)) {

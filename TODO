@@ -1,3 +1,4 @@
 AdPlug/XMMS To Do List:
 -----------------------
-- Write the actual plugin. ;)
+- Implement "Formats" config-dialog tab
+- Implement "Quick detect" feature
