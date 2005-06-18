@@ -1,7 +1,7 @@
 This is a brief overview of user-visible changes in AdPlug/XMMS.
 
 Changes for version 1.2:
-- None yet.
+- Bugfix: When pressing pause and then stop, XMMS did lock up.
 
 Changes for version 1.1:
 - Made the installation target directory configurable through the

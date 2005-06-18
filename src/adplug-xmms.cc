@@ -1,6 +1,6 @@
 /*
    AdPlug/XMMS - AdPlug XMMS Plugin
-   Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>
+   Copyright (C) 2002, 2003, 2005 Simon Peter <dn.tlp@gmx.net>
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -675,7 +675,7 @@ static void *play_loop(void *filename)
     adplug_ip.add_vis_pcm(adplug_ip.output->written_time(),
 			  bit16 ? FORMAT_16 : FORMAT_8,
 			  stereo ? 2 : 1, SNDBUFSIZE * sampsize, sndbuf);
-    while(adplug_ip.output->buffer_free() < SNDBUFSIZE * sampsize) xmms_usleep(10000);
+    while(adplug_ip.output->buffer_free() < SNDBUFSIZE * sampsize && plr.playing) xmms_usleep(10000);
     adplug_ip.output->write_audio(sndbuf, SNDBUFSIZE * sampsize);
 
     // update infobox, if necessary
