@@ -17,7 +17,7 @@ AC_PROG_CXX
 
 # Check library/program dependencies.
 ACX_PTHREAD(,AC_MSG_ERROR([*** POSIX threads not installed ***]))
-AC_CHECK_LIB(adplug,main,,AC_MSG_ERROR([*** AdPlug not installed ***]))
+PKG_CHECK_MODULES([adplug], [adplug >= 1.6])
 AM_PATH_XMMS(0.9.5.1,,AC_MSG_ERROR([*** XMMS >= 0.9.5.1 not installed ***]))
 
 # Determine plugin installation directory
