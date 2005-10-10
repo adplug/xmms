@@ -2,6 +2,8 @@ This is a brief overview of user-visible changes in AdPlug/XMMS.
 
 Changes for version 1.2:
 - Bugfix: When pressing pause and then stop, XMMS did lock up.
+- Song info box is now user resizeable. This also avoids annoying
+  window size changes due to rapid status text size changes.
 
 Changes for version 1.1:
 - Made the installation target directory configurable through the

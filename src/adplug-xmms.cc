@@ -73,7 +73,7 @@ static struct {
   float			time_ms;
   bool			playing;
   pthread_t		play_thread;
-  GtkLabel		*infobox;
+  GtkLabel		*infobox, *infostats;
   GtkDialog		*infodlg;
 } plr = { 0, 0, 0, 0, -1, "", NULL, 0.0f, false, 0, NULL, NULL };
 
@@ -447,7 +447,6 @@ static void adplug_info_box(char *filename)
   if(!p) return; // bail out if no player could be created
   if(p == plr.p && plr.infodlg) return; // only one info box for active song
 
-  std::ostringstream infotext;
   unsigned int i;
   GtkDialog *infobox = GTK_DIALOG(gtk_dialog_new());
   GtkButton *okay_button = GTK_BUTTON(gtk_button_new_with_label("Ok"));
@@ -456,7 +455,7 @@ static void adplug_info_box(char *filename)
 
   // Build file info box
   gtk_window_set_title(GTK_WINDOW(infobox), "AdPlug :: File Info");
-  gtk_window_set_policy(GTK_WINDOW(infobox), FALSE, FALSE, TRUE); // Window is auto sized
+  gtk_window_set_policy(GTK_WINDOW(infobox), FALSE, TRUE, FALSE); // Window is auto sized
   gtk_container_add(GTK_CONTAINER(infobox->vbox), GTK_WIDGET(packer));
   gtk_packer_set_default_border_width(packer, 2);
   gtk_box_set_homogeneous(GTK_BOX(hbox), FALSE);
@@ -472,27 +471,50 @@ static void adplug_info_box(char *filename)
 			  GTK_SIDE_TOP, GTK_ANCHOR_CENTER, GTK_FILL_X);
 
   // Add "Song info" section
-  infotext << "Title: " << p->gettitle() << std::endl <<
-    "Author: " << p->getauthor() << std::endl <<
-    "File Type: " << p->gettype() << std::endl <<
-    "Subsongs: " << p->getsubsongs() << std::endl <<
-    "Instruments: " << p->getinstruments();
-  if(plr.p == p)
+  {
+    std::ostringstream	infotext, infostats;
+    GtkHBox		*hb = GTK_HBOX(gtk_hbox_new(FALSE, 2));
+
+    // Left hand side (fixed text)
+    infotext << "Title:" << std::endl <<
+      "Author:" << std::endl <<
+      "File Type:" << std::endl <<
+      "Subsongs:" << std::endl <<
+      "Instruments:";
+
+    // Right hand side (variable status text)
+    infostats << p->gettitle() << std::endl <<
+      p->getauthor() << std::endl <<
+      p->gettype() << std::endl <<
+      p->getsubsongs() << std::endl <<
+      p->getinstruments();
+
+    if(plr.p != p) {
+      infotext << std::endl << "Orders:" << std::endl << "Patterns:";
+      infostats << std::endl << p->getorders() << std::endl << p->getpatterns();
+    }
+
     infotext << std::ends;
-  else {
-    infotext << std::endl << "Orders: " << p->getorders() << std::endl <<
-      "Patterns: " << p->getpatterns() << std::ends;
+    infostats << std::ends;
+
+    gtk_container_add(GTK_CONTAINER(hb), print_left(infotext.str().c_str()));
+    gtk_container_add(GTK_CONTAINER(hb), print_left(infostats.str().c_str()));
+    gtk_container_add(GTK_CONTAINER(hbox), make_framed(GTK_WIDGET(hb), "Song"));
   }
-  gtk_container_add(GTK_CONTAINER(hbox),
-		    make_framed(print_left(infotext.str().c_str()), "Song"));
 
   // Add "Playback info" section if currently playing
   if(plr.p == p) {
+    GtkHBox	*hb = GTK_HBOX(gtk_hbox_new(TRUE, 2));
+
     plr.infobox = GTK_LABEL(gtk_label_new(""));
+    plr.infostats = GTK_LABEL(gtk_label_new(""));
     gtk_label_set_justify(plr.infobox, GTK_JUSTIFY_LEFT);
-    gtk_misc_set_padding(GTK_MISC(plr.infobox), 2, 2);
+    gtk_label_set_justify(plr.infostats, GTK_JUSTIFY_LEFT);
+
+    gtk_container_add(GTK_CONTAINER(hb), GTK_WIDGET(plr.infobox));
+    gtk_container_add(GTK_CONTAINER(hb), GTK_WIDGET(plr.infostats));
     gtk_container_add(GTK_CONTAINER(hbox),
-		      make_framed(GTK_WIDGET(plr.infobox), "Playback"));
+		      make_framed(GTK_WIDGET(hb), "Playback"));
   }
   gtk_packer_add_defaults(packer, GTK_WIDGET(hbox), GTK_SIDE_TOP,
 			  GTK_ANCHOR_CENTER, GTK_FILL_X);
@@ -568,17 +590,24 @@ static void adplug_info_box(char *filename)
 
 static void update_infobox(void)
 {
-  std::ostringstream infotext;
+  std::ostringstream	infotext, infostats;
 
   // Recreate info string
-  infotext << "Order: " << plr.p->getorder() << " / " << plr.p->getorders() <<
-    std::endl << "Pattern: " << plr.p->getpattern() << " / " <<
-    plr.p->getpatterns() << std::endl << "Row: " << plr.p->getrow() <<
-    std::endl << "Speed: " << plr.p->getspeed() << std::endl << "Timer: " <<
+  infotext << "Order:" << std::endl <<
+    "Pattern:" << std::endl <<
+    "Row:" << std::endl <<
+    "Speed:" <<  std::endl <<
+    "Timer:" << std::ends;
+
+  infostats << plr.p->getorder() << " / " << plr.p->getorders() << std::endl <<
+    plr.p->getpattern() << " / " << plr.p->getpatterns() << std::endl <<
+    plr.p->getrow() << std::endl <<
+    plr.p->getspeed() << std::endl <<
     plr.p->getrefresh() << "Hz" << std::ends;
 
   GDK_THREADS_ENTER();
   gtk_label_set_text(plr.infobox, infotext.str().c_str());
+  gtk_label_set_text(plr.infostats, infostats.str().c_str());
   GDK_THREADS_LEAVE();
 }
 
