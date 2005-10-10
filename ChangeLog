@@ -1,3 +1,35 @@
+2005-10-10 13:04  dynamite
+
+	* NEWS, src/adplug-xmms.cc: Song info window is now user
+	resizeable. Added homogeneous info box status display.
+
+2005-09-20 21:33  dynamite
+
+	* configure.in, src/Makefile.am: Made compatible with latest AdPlug
+	1.6.
+
+2005-06-18 19:11  dynamite
+
+	* NEWS, src/adplug-xmms.cc: Fixed the "pause and the stop" bug.
+
+2003-05-04 00:33  dynamite
+
+	* Makefile.am, TODO, configure.in: Bumped version number.
+
+2003-03-19 12:55  dynamite
+
+	* AUTHORS, NEWS, adplug-xmms.spec, configure.in: Bumped version
+	number.
+
+2003-03-18 15:46  dynamite
+
+	* Makefile.am: Added missing files to archive. RC2.
+
+2003-03-18 15:11  dynamite
+
+	* ChangeLog, adplug-xmms_mdk.spec: Remove mandrake spec file.
+	Release Candidate #2.
+
 2003-03-18 14:45  dynamite
 
 	* configure.in: Release Candidate #1.
