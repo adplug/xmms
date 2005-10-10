@@ -1,3 +1,7 @@
+2005-10-10 13:11  dynamite
+
+	* ChangeLog, README: Release candidate.
+
 2005-10-10 13:04  dynamite
 
 	* NEWS, src/adplug-xmms.cc: Song info window is now user
