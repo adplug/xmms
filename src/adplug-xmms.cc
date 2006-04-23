@@ -1,6 +1,6 @@
 /*
    AdPlug/XMMS - AdPlug XMMS Plugin
-   Copyright (C) 2002, 2003, 2005 Simon Peter <dn.tlp@gmx.net>
+   Copyright (C) 2002 - 2006 Simon Peter <dn.tlp@gmx.net>
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -139,7 +139,7 @@ static void adplug_about(void)
   std::ostringstream text;
 
   text << ADPLUG_XMMS_VERSION "\n"
-    "Copyright (C) 2002, 2003 Simon Peter <dn.tlp@gmx.net>\n\n"
+    "Copyright (C) 2002 - 2006 Simon Peter <dn.tlp@gmx.net>\n\n"
     "This plugin is released under the terms and conditions of the GNU LGPL.\n"
     "See http://www.gnu.org/licenses/lgpl.html for details."
     "\n\nThis plugin uses the AdPlug library, which is copyright (C) Simon Peter, et al.\n"
