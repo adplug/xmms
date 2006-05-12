@@ -1,124 +1,137 @@
-2005-10-10 13:11  dynamite
+2006-04-23 16:19  dynamite
+
+	* README, configure.in, src/adplug-xmms.cc: Fixed copyright and
+	  made compatible with pre-2.0 AdPlug versions.
+
+2006-02-27 22:14  dynamite
+
+	* src/Makefile.am: Changed datadir to $(sharedstatedir).
+
+2005-10-10 04:11  dynamite
+
+	* .cvsignore, ChangeLog: release candidate
+
+2005-10-10 04:11  dynamite
 
 	* ChangeLog, README: Release candidate.
 
-2005-10-10 13:04  dynamite
+2005-10-10 04:04  dynamite
 
 	* NEWS, src/adplug-xmms.cc: Song info window is now user
-	resizeable. Added homogeneous info box status display.
+	  resizeable. Added homogeneous info box status display.
 
-2005-09-20 21:33  dynamite
+2005-09-20 12:33  dynamite
 
 	* configure.in, src/Makefile.am: Made compatible with latest AdPlug
-	1.6.
+	  1.6.
 
-2005-06-18 19:11  dynamite
+2005-06-18 10:11  dynamite
 
 	* NEWS, src/adplug-xmms.cc: Fixed the "pause and the stop" bug.
 
-2003-05-04 00:33  dynamite
+2003-05-03 15:33  dynamite
 
 	* Makefile.am, TODO, configure.in: Bumped version number.
 
-2003-03-19 12:55  dynamite
+2003-03-19 03:55  dynamite
 
 	* AUTHORS, NEWS, adplug-xmms.spec, configure.in: Bumped version
-	number.
+	  number.
 
-2003-03-18 15:46  dynamite
+2003-03-18 06:46  dynamite
 
 	* Makefile.am: Added missing files to archive. RC2.
 
-2003-03-18 15:11  dynamite
+2003-03-18 06:11  dynamite
 
 	* ChangeLog, adplug-xmms_mdk.spec: Remove mandrake spec file.
-	Release Candidate #2.
+	  Release Candidate #2.
 
-2003-03-18 14:45  dynamite
+2003-03-18 05:45  dynamite
 
 	* configure.in: Release Candidate #1.
 
-2003-03-07 14:40  dynamite
+2003-03-07 05:40  dynamite
 
 	* src/adplug-xmms.cc: Removed test debug symbols again.
 
-2003-03-07 13:23  dynamite
+2003-03-07 04:23  dynamite
 
 	* src/adplug-xmms.cc: debug...
 
-2003-03-07 13:14  dynamite
+2003-03-07 04:14  dynamite
 
 	* src/adplug-xmms.cc: Inserted yet more debug messages for testing
-	purposes. Will be removed later.
+	  purposes. Will be removed later.
 
-2003-03-05 20:37  dynamite
+2003-03-05 11:37  dynamite
 
 	* src/adplug-xmms.cc: Added many more debug messages.
 
-2003-03-04 14:40  dynamite
+2003-03-04 05:40  dynamite
 
 	* src/adplug-xmms.cc: Fixed double pointer deinit in config file
-	reading.
+	  reading.
 
-2003-03-04 13:48  dynamite
+2003-03-04 04:48  dynamite
 
 	* README, adplug-xmms.spec: Updated redhat spec file.
 
-2003-03-03 16:46  dynamite
+2003-03-03 07:46  dynamite
 
 	* adplug-xmms_mdk.spec: Added Mandrake .spec file.
 
-2003-02-21 21:16  dynamite
+2003-02-21 12:16  dynamite
 
 	* src/: Makefile.am, adplug-xmms.cc: GCC 3.2 fixes.
 
-2003-01-30 18:03  dynamite
+2003-01-30 09:03  dynamite
 
 	* NEWS, README, TODO, configure.in, src/Makefile.am,
-	src/adplug-xmms.cc: Made the installation target directory
-	configurable through the 'xmms_input_plugin_dir' variable.
-	Implemented "Formats" config-dialog tab. Implemented "Quick detect"
-	feature.  Added tooltips.
+	  src/adplug-xmms.cc: Made the installation target directory
+	  configurable through the 'xmms_input_plugin_dir' variable.
+	  Implemented "Formats" config-dialog tab. Implemented "Quick
+	  detect" feature.  Added tooltips.
 
-2002-11-29 17:59  dynamite
+2002-11-29 08:59  dynamite
 
 	* .cvsignore, Makefile.am, adplug-xmms.cc, configure.in,
-	src/.cvsignore, src/Makefile.am, src/adplug-xmms.cc: Moved sources
-	into src directory.
+	  src/.cvsignore, src/Makefile.am, src/adplug-xmms.cc: Moved
+	  sources into src directory.
 
-2002-11-28 15:09  dynamite
+2002-11-28 06:09  dynamite
 
 	* AUTHORS, TODO, adplug-xmms.cc, adplug-xmms.spec: Added Red Hat
-	RPM spec file. Small STL fix in adplug-xmms.cc.
+	  RPM spec file. Small STL fix in adplug-xmms.cc.
 
-2002-10-26 15:17  dynamite
+2002-10-26 06:17  dynamite
 
 	* TODO: AdPlug/XMMS Release Candidate #1.
 
-2002-10-24 23:18  dynamite
+2002-10-24 14:18  dynamite
 
 	* TODO, adplug-xmms.cc: AdPlug/XMMS 1.0 Release Candidate #1
 
-2002-10-24 18:49  dynamite
+2002-10-24 09:49  dynamite
 
 	* README, adplug-xmms.cc: AdPlug/XMMS Release Candidate #1.
 
-2002-10-15 23:37  dynamite
+2002-10-15 14:37  dynamite
 
 	* .cvsignore: Added cvsignore file.
 
-2002-10-15 23:36  dynamite
+2002-10-15 14:36  dynamite
 
 	* Makefile.am, README, acinclude.m4, adplug-xmms.cc, configure.in:
-	Wrote a basic AdPlug plugin. Compiles, runs well and is seekable.
+	  Wrote a basic AdPlug plugin. Compiles, runs well and is seekable.
 
-2002-10-09 22:11  dynamite
-
-	* Makefile.am, TODO, AUTHORS, COPYING, ChangeLog, NEWS, README,
-	adplug-xmms.cc, configure.in: Initial revision
-
-2002-10-09 22:11  dynamite
+2002-10-09 13:11  dynamite
 
 	* Makefile.am, TODO, AUTHORS, COPYING, ChangeLog, NEWS, README,
-	adplug-xmms.cc, configure.in: Initial import.
+	  adplug-xmms.cc, configure.in: Initial import.
+
+2002-10-09 13:11  dynamite
+
+	* Makefile.am, TODO, AUTHORS, COPYING, ChangeLog, NEWS, README,
+	  adplug-xmms.cc, configure.in: Initial revision
 
