@@ -1,5 +1,11 @@
 This is a brief overview of user-visible changes in AdPlug/XMMS.
 
+Changes for version 1.3:
+- Bugfix: Workaround for bug in XMMS' OSS output plugin.
+- Bugfix: Calculate songlength for default subsong of added files.
+- Now plays default subsong of a file if no subsong was selected
+  (previously played subsong 0).
+
 Changes for version 1.2:
 - Bugfix: When pressing pause and then stop, XMMS did lock up.
 - Song info box is now user resizeable. This also avoids annoying

@@ -1,6 +1,6 @@
 /*
    AdPlug/XMMS - AdPlug XMMS Plugin
-   Copyright (C) 2002 - 2006 Simon Peter <dn.tlp@gmx.net>
+   Copyright (C) 2002 - 2007 Simon Peter <dn.tlp@gmx.net>
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -262,10 +262,6 @@ static void adplug_config(void)
     rb = GTK_RADIO_BUTTON(gtk_radio_button_new_with_label_from_widget(rb, "Stereo"));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(rb), cfg.stereo);
     gtk_container_add(GTK_CONTAINER(fvb), GTK_WIDGET(rb));
-    gtk_tooltips_set_tip(tooltips, GTK_WIDGET(rb),
-			 "Setting stereo is not recommended, unless you need to. "
-			 "This won't add any stereo effects to the sound - OPL2 "
-			 "is just mono - but eats up more CPU power!", NULL);
     g_ptr_array_add(rblist, (gpointer)rb);
 
     // Add "Frequency" section
@@ -650,7 +646,7 @@ static void *play_loop(void *filename)
   dbg_printf("subsong, ");
   if(strcmp((char *)filename, plr.filename)) {
     strcpy(plr.filename, (char *)filename);
-    plr.subsong = 0;
+    plr.subsong = plr.p->getsubsong();
   }
 
   // Allocate audio buffer
@@ -714,8 +710,12 @@ static void *play_loop(void *filename)
   // playback finished - deinit
   dbg_printf("play_loop(\"%s\"): ", (char *)filename);
   if(!playing) { // wait for output plugin to finish if song has self-ended
+    int cnt = 0;
     dbg_printf("wait, ");
-    while(adplug_ip.output->buffer_playing()) xmms_usleep(10000);
+    // The counter actually works around a bug in XMMS' OSS output plugin:
+    // Sometimes, buffer_playing() endlessly returns TRUE
+    while(adplug_ip.output->buffer_playing() && cnt++ < 1000)
+      xmms_usleep(10000);
   } else { // or else, flush its output buffers
     dbg_printf("flush, ");
     adplug_ip.output->buffer_free(); adplug_ip.output->buffer_free();
@@ -777,7 +777,7 @@ static void adplug_song_info(char *filename, char **title, int *length)
     }
 
     // get song length
-    *length = p->songlength(plr.subsong);
+    *length = p->songlength();
 
     // delete temporary player object
     delete p;
@@ -797,6 +797,10 @@ static void adplug_play(char *filename)
   dbg_printf("dialog, ");
   if(plr.infobox && strcmp(filename, plr.filename))
     gtk_widget_destroy(GTK_WIDGET(plr.infodlg));
+
+  // initialize output plugin
+  dbg_printf("init, ");
+  adplug_ip.output->init();
 
   // open output plugin
   dbg_printf("open, ");

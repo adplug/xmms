@@ -1,6 +1,6 @@
 # Tell autoconf we're compiling a dynamic dlopen()'d C++ library (also
 # called 'plugin' ;) ) using automake and libtool.
-AC_INIT(adplug-xmms,1.2)
+AC_INIT(adplug-xmms,1.3)
 AC_CONFIG_SRCDIR(src/adplug-xmms.cc)
 AC_CONFIG_FILES(Makefile src/Makefile)
 AM_INIT_AUTOMAKE
@@ -17,11 +17,7 @@ AC_PROG_CXX
 
 # Check library/program dependencies.
 ACX_PTHREAD(,AC_MSG_ERROR([*** POSIX threads not installed ***]))
-PKG_CHECK_MODULES([adplug], [adplug >= 2.0],,[
-AC_MSG_WARN([You seem to be using a version of AdPlug prior to 2.0. \
-I will try to do the old-style library search for which i cannot check \
-versions. Please bear in mind that i am requiring at least version 1.4.])
-AC_CHECK_LIB(adplug,main,,AC_MSG_ERROR([*** AdPlug not installed ***]))])
+PKG_CHECK_MODULES([adplug], [adplug >= 2.2])
 AM_PATH_XMMS(0.9.5.1,,AC_MSG_ERROR([*** XMMS >= 0.9.5.1 not installed ***]))
 
 # Determine plugin installation directory
