@@ -7,3 +7,6 @@ Additional Credits:
 Goetz Waschk <waschk@informatik.uni-rostock.de>:
   - Mandrake Linux packages
   - Red Hat RPM spec file
+
+Linux Walleij <snirkel@users.sourceforge.net>:
+  - GCC 4.3.0 support
