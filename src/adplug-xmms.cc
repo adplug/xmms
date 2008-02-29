@@ -1,6 +1,6 @@
 /*
    AdPlug/XMMS - AdPlug XMMS Plugin
-   Copyright (C) 2002 - 2007 Simon Peter <dn.tlp@gmx.net>
+   Copyright (C) 2002 - 2008 Simon Peter <dn.tlp@gmx.net>
 
    AdPlug/XMMS is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,7 @@
 */
 
 #include <algorithm>
+#include <cstring>
 #include <sstream>
 #include <stdlib.h>
 #include <stdio.h>
