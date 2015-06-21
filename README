@@ -1,7 +1,7 @@
 AdPlug/XMMS - AdPlug XMMS Plugin
 Copyright (C) 2002 - 2007 Simon Peter <dn.tlp@gmx.net>
 
-Website: http://adplug.sourceforge.net/
+Website: http://adplug.github.io
 
 Description
 -----------
@@ -23,7 +23,7 @@ XMMS				>= 0.9.5.1
 GLib				>= 1.2
 GTK+				>= 1.2
 
-The AdPlug library can be obtained from http://adplug.sourceforge.net/.
+The AdPlug library can be obtained from http://adplug.github.io/.
 
 pthreads should have come with your system.
 
